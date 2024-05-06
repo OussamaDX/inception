@@ -1,0 +1,87 @@
+version: '3.8'
+
+services:
+  mariadb:
+    image: mariadb
+    container_name: mariadb
+    env_file: .env
+    networks:
+      - inception
+    build: ${PWD}/requirements/mariadb
+    volumes:
+      - mariadb:/var/lib/mysql
+    ports:
+      - "3306"
+    restart: always
+  nginx:
+    image: nginx
+    container_name: nginx
+    env_file: .env
+    networks:
+      - inception
+    volumes:
+      - wordpress:/var/www/html
+    build: ${PWD}/requirements/nginx
+    ports:
+      - "443:443"
+    depends_on:
+      - wordpress
+    restart: always
+
+  wordpress:
+    image: wordpress
+    container_name: wordpress
+    networks:
+      - inception
+    volumes:
+      - wordpress:/var/www/html
+    build:
+      context: ${PWD}/requirements/wordpress
+      dockerfile: Dockerfile
+    env_file: .env
+    depends_on:
+      - mariadb
+    ports:
+      - "9000"
+    restart: always
+
+  adminer: #for adminer
+    image: adminer
+    container_name: adminer
+    networks:
+      - inception
+    build: ${PWD}/requirements/bonus/adminer
+    ports:
+      - "8080:8080"
+    depends_on:
+      - mariadb
+    restart: always
+  static_website: #for static_website
+    image: static_website
+    container_name: static_website
+    networks:
+      - inception
+    build: ${PWD}/requirements/bonus/static_website
+    ports:
+      - "9090:9090"
+    restart: always
+
+volumes:
+  wordpress:
+    name: wordpress
+    driver: local
+    driver_opts:
+      type: 'none'
+      o: 'bind'
+      device: '/home/kali/data/wordpress'
+  mariadb:
+    name: mariadb
+    driver: local
+    driver_opts:
+      type: 'none'
+      o: 'bind'
+      device: '/home/kali/data/mariadb'
+
+networks:
+  inception:
+    driver: bridge
